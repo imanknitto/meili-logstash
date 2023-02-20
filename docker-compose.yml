@@ -1,0 +1,41 @@
+version: '3'
+
+services:
+  meilisearch:
+    container_name: meilisearch
+    image: getmeili/meilisearch:v1.0
+    environment:
+      - http_proxy
+      - https_proxy
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY:-masterKey}
+      - MEILI_NO_ANALYTICS=${MEILI_NO_ANALYTICS:-true}
+      - MEILI_ENV=${MEILI_ENV:-development}
+      - MEILI_LOG_LEVEL
+    ports:
+      - ${MEILI_PORT:-7700}:7700
+    networks:
+      - meilisearch
+    volumes:
+      - ./meilisearch/meili_data:/meili_data
+    restart: unless-stopped
+  logstatsh:
+    build: ./logstash
+    container_name: logstash
+    volumes:
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro,Z
+      - ./logstash/config/queries/:/usr/share/logstash/config/queries/
+      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro,Z
+    environment:
+      LS_JAVA_OPTS: "-Xmx256m -Xms256m"
+      DB_HOST: "${DB_HOST:-localhost}"
+      DB_PORT: "${DB_PORT:-3306}"
+      DB_USER: "${DB_USER}"
+      DB_PASS: "${DB_PASS}"
+      DB_NAME: "${DB_NAME}"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10k"
+        max-file: "10"
+    restart: unless-stopped
+
